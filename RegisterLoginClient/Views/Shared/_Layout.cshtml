@@ -1,0 +1,248 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - RegisterLoginClient</title>
+    <link href="~/lib/bootstrap/custom/css/custom.css" rel="stylesheet" />
+    <link href="~/css/owl.carousel.css" type="text/css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/owl.theme.default.css" type="text/css" rel="stylesheet" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" asp-fallback-src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.0/js/bootstrap.bundle.min.js" asp-fallback-src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="~/lib/axios/axios.min.js" asp-append-version="true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="~/microsoft/signalr/dist/browser/signalr.min.js"></script>
+    <script src="~/js/owl.carousel.js" type="text/javascript"></script>
+    <script src="https://kit.fontawesome.com/66638a3835.js" type="text/javascript" asp-fallback-href="/lib/font-awesome/js/fontawesome.js"></script>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            /* min-height: 100vh; */
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        footer {
+            padding: 1rem 0;
+            margin-top: auto;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            z-index: 2;
+        }
+
+
+        .user-photo {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-light bg-primary p-1">
+            <div class="d-flex justify-content-between" id="vue-nav" style="width: 100%;">
+                
+                <a class="navbar-brand pt-1 ps-2" asp-controller="Home" asp-action="Index">
+                    <img src="~/images/logo.png" width="100px" />
+                </a>
+              
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link fs-5 fw-bold text-white" asp-area="" asp-controller="Schdules" asp-action="Index">行程規劃</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link fs-5 fw-bold text-white  " asp-area="" asp-controller="SearchSpots" asp-action="Index">搜尋景點</a>
+                        </li>
+                    </ul>
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                        <li class="nav-item" v-if="!isLogin">
+                            <a id="register" class="nav-link text-white fs-5 fw-bold" asp-controller="Home" asp-action="Register">註冊會員</a>
+                        </li>
+                        <li class="nav-item" v-if="!isLogin">
+                            <a id="loginButton" class="nav-link text-white fs-5 fw-bold" role="button" data-bs-toggle="modal" data-bs-target="#loginModal">
+                                立即登入
+                            </a>
+                        </li>
+                        <li class="nav-item dropdown" v-if="isLogin">
+                            <button class="btn btn-secondary dropdown-toggle" id="memberDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <template v-if="user.photoBase64">
+                                    <img :src="'data:image/jpeg;base64,' + user.photoBase64" alt="User Photo" class="user-photo">
+                                </template>
+                                <template v-else>
+                                    <i class="fas fa-user text-white"></i>
+                                </template>
+                                {{ user.name }}，你好
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark" aria-labelledby="memberDropdown">
+                                <li>
+                                    <a id="MemberInfo" class="dropdown-item text-white fs-5 fw-bold" asp-controller="Home" asp-action="MemberInfo">會員資料</a>
+                                </li>
+                                <li>
+                                    <a id="ExpenseBtnId" class="dropdown-item text-white fs-5 fw-bold" href="#">分帳狀態</a>
+                                </li>
+                                <li v-if="isLogin">
+                                    <a id="logout" class="dropdown-item text-white fs-5 fw-bold" v-on:click="logOut" href="#">登出</a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sideBarOffcanvas" aria-controls="sideBarOffcanvas">
+                        <i class="fa-solid fa-heart"></i> | <i class="fa-solid fa-comment"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <div id="modal-container">
+            @await Html.PartialAsync("_LoginPartial")
+        </div>
+    </header>
+
+    @await Html.PartialAsync("_SideBarPartial")
+    
+    @* <div class=".container-fluid"> *@
+        <main role="main">
+            @RenderBody()
+        </main>
+        <div id="modal-container"></div>
+    @* </div> *@
+
+    <footer class="bg-black py-2" id="nva-footer">
+        <div class="container-fluid d-flex justify-content-center">
+            <span class="text-muted"><a class="text-light">© 2024 by PinPinTeam.</a></span>
+        </div>
+    </footer>
+
+    <script>
+
+        //全網頁用變數
+        var token;
+        const baseAddress = "https://localhost:7280"
+
+        //登入會員
+        $("#Login").on("click", async function () {
+            const email = $("#loginEmail").val();
+            const password = $("#loginPassword").val();
+
+            const response = await fetch(`${baseAddress}/api/Auth/Login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            });
+
+            if (response.ok) {
+                const token = await response.text();
+                const data = { Token: token };
+                localStorage.setItem('token', data.Token);
+                Swal.fire({
+                    title: "登入成功!",
+                    icon: "success"
+                }).then(c => {
+                    window.location.href = '@Url.Action("Index", "Home")';
+                });
+            } else {
+                Swal.fire({
+                    title: "登入失敗!請確認帳號密碼",
+                    icon: "error"
+                })
+            }
+        });
+
+        //layout用變數
+        const ExpenseBtnId = "ExpenseBtnId";
+        const modalContainerId = 'modal-container';
+
+        function goToLoginPage() {
+            var loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+            loginModal.show();
+        }
+        function getToken() {
+            token = localStorage.getItem('token');
+            if (!token) {
+                goToLoginPage();
+            }
+        }
+
+        const { createApp, onMounted, ref } = Vue;
+        createApp({
+            setup() {
+                const isLogin = ref(false)
+                const user = ref({ name: '', photoBase64: '' });
+                const getToken = () => {
+                    token = localStorage.getItem('token');
+                    isLogin.value = token === null ? false : true;
+                }
+
+                //取得用戶名稱、大頭貼照
+                const fetchUserInfo = async () => {
+                    if (token) {
+                        try {
+                            const response = await fetch(`${baseAddress}/api/MemberInfo/SearchMemberInfo`, {
+                                headers: {
+                                    'Authorization': `Bearer ${token}`
+                                }
+                            });
+
+                            if (response.ok) {
+                                const data = await response.json();
+                                user.value = data;
+                            } else {
+                                console.error('Failed to fetch user info');
+                            }
+                        } catch (error) {
+                            console.error('Error fetching user info:', error);
+                        }
+                    }
+                };
+                const logOut = () => {
+                    localStorage.removeItem('token');
+                    token = null;
+                    isLogin.value = false;  // 更新 isLogin 狀態
+                    window.location.reload();  // 或者直接刷新頁面
+                }
+
+                onMounted(() => {
+                    getToken();
+                    if (isLogin.value) {
+                        fetchUserInfo();
+                    }
+                });
+
+                return {
+                    isLogin,
+                    user,
+                    logOut,
+                };
+            }
+        }).mount("#vue-nav")
+    </script>
+    <script src="~/js/Expense/ExpenseIndex.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

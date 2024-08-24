@@ -1,0 +1,1406 @@
+﻿<style>
+    #iconSelect {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+        #iconSelect input[type="radio"] {
+            display: none;
+        }
+
+        #iconSelect input:checked + .button {
+            background: #5e7380;
+            color: #fff;
+            cursor: default;
+        }
+
+        #iconSelect .button {
+            display: inline-block;
+            margin: 0 5px 10px 0;
+            padding: 5px 10px;
+            background: #f7f7f7;
+            color: #333;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+            #iconSelect .button:hover {
+                background: #bbb;
+                color: #fff;
+            }
+
+        #iconSelect .round {
+            border-radius: 5px;
+        }
+
+    .edit-btn, .deleted-btn {
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    .message-wrapper:hover .edit-btn,
+    .message-wrapper:hover .deleted-btn {
+        opacity: 1;
+    }
+
+</style>
+<!-- 聊天室側邊欄 offcanvas start -->
+<div id="appSidebar">
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="sideBarOffcanvas" aria-labelledby="sideBarOffcanvasLabel">
+        <div class="offcanvas-header">
+            <!-- 側邊欄頁籤Navs and tabs start -->
+            <ul class="nav nav-tabs" id="sideBarOffcanvasLabel">
+                <li class="nav-item">
+                    <a class="nav-link active" data-bs-toggle="tab" aria-current="page" href="#wishlistTab" v-on:click="fetchWishlists">願望清單</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#chatRoomTab">聊天室</a>
+                </li>
+            </ul>
+            <!-- 側邊欄頁籤Navs and tabs end -->
+            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body tab-content">
+            <!--願望清單內容 start-->
+            <div id="wishlistTab" class="tab-pane fade show active ">
+                <div v-if="isLoggedIn">
+                    <!-- accordion start -->
+                    <div class="accordion accordion-flush" id="wishlistAccordionFlush">
+                        <div class="accordion-item" v-for="(wishlist, index) in wishlists" :key="wishlist.id">
+                            <h2 class="accordion-header" :id="'flush-heading' + index">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                        :data-bs-target="'#flush-collapse' + index" aria-expanded="false"
+                                        :aria-controls="'flush-collapse' + index" v-on:click="fetchWishlists()">
+                                    {{wishlist.name}}
+                                </button>
+                            </h2>
+                            <div :id="'flush-collapse' + index" class="accordion-collapse collapse"
+                                 :aria-labelledby="'flush-heading' + index" data-bs-parent="#wishlistAccordionFlush">
+                                <div class="accordion-body d-flex flex-column" v-for="(locationCategory, lcIndex) in wishlist.locationCategories" :key="locationCategory.id">
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-outline-primary" type="button" v-on:click="setSelectedCategory(wishlist, locationCategory.id)" :style="{ color: locationCategory.color, borderColor: locationCategory.color }">
+                                            <i :class="locationCategory.icon"></i>  {{locationCategory.name}}
+                                        </button>
+                                    </div>
+                                    <!--行程卡片-->
+                                    <div class="row" v-if="wishlist.selectedCategoryId === locationCategory.id">
+                                        <!-- 判斷行程卡片是否有內容 -->
+                                        <template v-if="getFilteredDetails(wishlist).length > 0">
+                                            <div class="col-md-6" v-for="detail in getFilteredDetails(wishlist)" :key="detail.id">
+                                                <div class="card mb-3" style="width: 100%;">
+                                                    <img :src="detail.photoUrl" class="card-img-top" alt="...">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title">{{ detail.name }}</h5>
+                                                        <p class="card-text">{{ detail.address }}</p>
+                                                       @*  <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addtoScheduleModal" v-on:click="setSelectedLocation(detail)"><i class="fa-solid fa-calendar-days"></i></button> *@
+                                                        <button class="btn btn-outline-primary" v-on:click="deleteSelectedDetail(detail.id)"><i class="fa-solid fa-trash"></i></button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <!-- 如果沒有行程內容，顯示[尚無行程] -->
+                                        <div class="col-md-12" v-else>
+                                            <div class="card mb-3 text-center" style="width: 100%; border-color: #ccc;">
+                                                <div class="card-body">
+                                                    <h5 class="card-title">目前沒有行程，趕快搜尋喜歡的地點吧！</h5>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!--編輯願望清單/標籤按鈕-->
+                        <div class="d-flex justify-content-end mt-3">
+                            <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#createWishlistModal"><i class="fa-solid fa-plus"></i> 新增</button>
+                            <button class="btn btn-outline-primary ms-2" type="button" data-bs-toggle="modal" data-bs-target="#editWishlistModal"><i class="fa-solid fa-pen"></i> 編輯</button>
+                            <button class="btn btn-outline-primary ms-2" type="button" data-bs-toggle="modal" data-bs-target="#deleteWishlistModal"><i class="fa-solid fa-trash-can"></i> 刪除</button>
+                        </div>
+                    </div>
+                    <!-- accordion end -->
+                </div>
+                <div v-else>
+                    <!-- 尚未登入提示 -->
+                    <p>尚未登入，請先登入後查看您的願望清單。</p>
+                </div>
+            </div>
+            <!--願望清單內容 end-->
+            <!-- 聊天室內容 start-->
+            <!-- Offcanvas Body -->
+            <div id="chatRoomTab" class="tab-pane fade d-flex flex-column h-100">
+                <div v-if="isLoggedIn" class="flex-grow-1 d-flex flex-column h-100">
+                    <!-- Schedule List Carousel -->
+                    <div class="owl-carousel owl-theme mb-3" id="SchdulesList">
+                        <div class="item" v-for="(value, key) in schdules" :key="key">
+                            <button :class="['btn', selectedChatroom !== key ? 'btn-outline-primary' : 'btn-primary']"
+                                    v-on:click="selectChatroom(key)">
+                                {{ value }}
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Chat Room -->
+                    <div ref="chatroomMessages" class="chatroom-messages p-3 border rounded overflow-auto flex-grow-1">
+                        <div v-for="(message, index) in messages" :key="message.id">
+                            <!-- Date Separator -->
+                            <div v-if="isNewDay(index)" class="text-center my-3">
+                                <hr />
+                                <span class="badge rounded-pill bg-secondary">{{ formatDate(message.createdAt) }}</span>
+                            </div>
+                            <div v-if="message.isDeleted" class="text-center my-3">
+                                <span class="badge rounded-pill bg-warning text-dark">
+                                    <i class="fa-solid fa-trash"></i> 此訊息已被刪除
+                                </span>
+                            </div>
+                            <div v-else :class="['d-flex', message.userName == userdata.name ? 'justify-content-end' : 'justify-content-start']">
+                                <div :class="['d-flex', message.userName == userdata.name ? 'flex-row-reverse align-items-start' : 'align-items-start']">
+                                    <!-- User Avatar -->
+                                    <div class="d-flex flex-column align-items-center" :class="message.userName == userdata.name ? 'ms-2' : 'me-2'">
+                                        <div class="rounded-circle"
+                                             style="width: 40px; height: 40px; flex-shrink: 0; overflow: hidden; border: 2px solid #ccc; background-color: transparent;">
+                                            <img :src="getUserPhoto(message.userId)" alt="avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                                        </div>
+                                        <span style="font-size: 0.8rem;">{{message.userName}}</span>
+                                    </div>
+                                    <!-- Message Content and Edit Button -->
+                                    <div class="d-flex flex-column message-wrapper">
+                                        <div class="d-flex align-items-center">
+                                            <!-- Edit Button -->
+                                            <button v-if="message.userName === userdata.name && message.id !== editMessageId" v-on:click="enableEditing(message)" class="btn btn-sm btn-link text-muted me-2 edit-btn">
+                                                <i class="fa-regular fa-pen-to-square"></i>
+                                            </button>
+                                            <!-- Deleted Button -->
+                                            <button v-if="message.userName === userdata.name" v-on:click="deleteMessage(message)" class="btn btn-sm btn-link text-danger me-2 deleted-btn">
+                                                <i class="fa-regular fa-trash-alt"></i>
+                                            </button>
+                                            <!-- Message Bubble -->
+                                            <div v-if="message.id !== editMessageId" :class="['p-2', 'mb-1', 'rounded-3', message.userName === userdata.name ? 'bg-dark text-white' : 'bg-light']" style="word-wrap: break-word;">
+                                                {{ message.message }}
+                                            </div>
+                                            <div v-else>
+                                                <input v-model="editMessage" class="form-control mb-1" />
+                                                <button v-on:click="saveMessage()" class="btn btn-sm btn-success me-2">Save</button>
+                                                <button v-on:click="cancelEditing()" class="btn btn-sm btn-danger">Cancel</button>
+                                            </div>
+                                            <!-- Deleted Button -->
+                                            <button v-if="message.userName !== userdata.name && hasAccess" v-on:click="deleteMessage(message)" class="btn btn-sm btn-link text-danger me-2 deleted-btn">
+                                                <i class="fa-regular fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                        <!-- Message Time -->
+                                        <div :class="['text-muted', message.userName === userdata.name ? 'text-end' : 'text-start']" style="font-size: 0.8rem;">
+                                            <span v-if="message.isEdited && message.userName === userdata.name" class="text-black-50">(已編輯)</span>
+                                            {{ formatTime(message.createdAt) }}
+                                            <span v-if="message.isEdited && message.userName !== userdata.name" class="text-black-50">(已編輯)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Input Area -->
+                    <div class="chatroom-input bg-light p-3">
+                        <div class="input-group">
+                            <input type="text"
+                                   v-model="newMessage"
+                                   class="form-control"
+                                   placeholder="在此輸入聊天訊息" />
+                            <button class="btn btn-primary" v-on:click="sendMessage(selectedChatroom,newMessage)">Send</button>
+                        </div>
+                    </div>
+                </div>
+                <div v-else>
+                    <p>尚未登入，請先登入後查看您的聊天室。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--編輯願望清單及標籤modal-->
+    <div class="modal fade" id="editWishlistModal" tabindex="-1" aria-labelledby="editWishlistModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <!-- 編輯Modal頁籤 start-->
+                    <ul class="nav nav-tabs" id="editWishlistModalLabel" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#editWishlistTab" role="tab">願望清單</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#editLocationCategoryTab" role="tab">標籤</a>
+                        </li>
+                    </ul>
+                    <!-- 編輯Modal頁籤 end-->
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <!-- Tab Content -->
+                <div class="tab-content">
+                    <!--編輯願望清單-->
+                    <div id="editWishlistTab" class="tab-pane fade show active" role="tabpanel">
+                        <!-- 顯示畫面 -->
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="wishlist">選擇清單:</label>
+                                <select class="form-control wishlist-select" v-model="selectedWishlistId" v-on:change="updateSelectedWishlist">
+                                    <option v-for="wishlist in wishlists" :key="wishlist.id" :value="wishlist.id">
+                                        {{ wishlist.name }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div v-if="selectedWishlist">
+                                <label for="editWishlistName">編輯名稱:</label>
+                                <input id="editWishlistName" v-model="selectedWishlist.name" class="form-control">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fa-solid fa-xmark"></i> 取消</button>
+                            <button type="button" class="btn btn-primary" v-on:click="saveWishlist"><i class="fa-solid fa-box-archive"></i> 儲存</button>
+                        </div>
+                    </div>
+                    <!--編輯標籤-->
+                    <div id="editLocationCategoryTab" class="tab-pane fade" role="tabpanel">
+                        <!-- 顯示畫面 -->
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="wishlist">選擇清單:</label>
+                                <select class="form-control wishlist-select" v-model="selectedWishlistId" v-on:change="changeOption">
+                                    <option v-for="wishlist in wishlists" :key="wishlist.id" :value="wishlist.id">
+                                        {{ wishlist.name }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="location">選擇分類:</label>
+                                <select class="form-control location-select" v-model="selectedLocationCategoryId" v-on:change="updateSelectedLocationCategory">
+                                    <option v-for="location in locationCategories" :key="location.id" :value="location.id">
+                                        {{ location.name }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div v-if="selectedLocationCategory">
+                                <div class="mb-3">
+                                    <label for="editLocationCategory">編輯標籤名稱:</label>
+                                    <input id="editLocationCategory" v-model="selectedLocationCategory.name" class="form-control">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editLocationIcon">編輯標籤圖示:</label>
+                                    <div id="editLocationIcon" class="d-flex flex-wrap">
+                                        <div v-for="icon in icons" :key="icon.value" class="me-3 mb-2">
+                                            <label>
+                                                <input type="radio" name="categoryIcon" :value="icon.value" v-model="selectedLocationCategory.icon" :id="icon.value" required>
+                                                <span class="round button">
+                                                    <i :class="icon.value" class="fs-4 me-2"></i>
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editLocationColor">編輯標籤顏色:</label>
+                                    <input id="editLocationColor" v-model="selectedLocationCategory.color" class="form-control" type="color">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fa-solid fa-xmark"></i> 取消</button>
+                            <button type="button" class="btn btn-primary" v-on:click="saveLocationCategory"><i class="fa-solid fa-box-archive"></i> 儲存</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增wishlist及locationCategory的模態視窗 -->
+    <div class="modal fade" id="createWishlistModal" tabindex="-1" aria-labelledby="createWishlistModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createWishlistModalLabel">新增願望清單及標籤</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form v-on:submit.prevent="handleSubmit">
+                        <div class="mb-3">
+                            <label for="wishlist">選擇清單:</label>
+                            <select class="form-control wishlist-select" v-model="selectedWishlistId">
+                                <option v-for="wishlist in wishlists" :key="wishlist.id" :value="wishlist.id">
+                                    {{ wishlist.name }}
+                                </option>
+                                <option :value="null">--新增願望清單--</option>
+                            </select>
+                        </div>
+                        <div v-if="selectedWishlistId === null">
+                            <label for="createWishlistName">新增願望清單:</label>
+                            <input id="createWishlistName" v-model="newWishlistName" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="categoryName" class="form-label">標籤名稱</label>
+                            <input type="text" class="form-control" id="categoryName" v-model="newCategoryName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="categoryColor" class="form-label">標籤顏色</label>
+                            <input type="color" class="form-control" id="categoryColor" v-model="newCategoryColor" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="categoryIcon" class="form-label">標籤圖示</label>
+                            <div id="iconSelect" class="d-flex flex-wrap">
+                                <div v-for="icon in icons" :key="icon.value" class="me-3 mb-2">
+                                    <label>
+                                        <input type="radio" name="categoryIcon" :value="icon.value" v-model="newCategoryIcon" :id="icon.value" required>
+                                        <span class="round button">
+                                            <i :class="icon.value" class="fs-4 me-2"></i>
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary" v-on:click="handleSubmit"><i class="fa-solid fa-plus"></i> 新增</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--確認要刪除的願望清單及標籤-->
+    <div class="modal fade" id="deleteWishlistModal" tabindex="-1" aria-labelledby="deleteWishlistModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteWishlistModalLabel">刪除願望清單及標籤</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" v-on:click="setSelectedCategory(wishlist, locationCategoryId)"></button>
+                </div>
+                <div class="modal-body">
+                    <form v-on:submit.prevent="deleteWishlistWithCategory">
+                        <div class="mb-3">
+                            <label for="wishlist">選擇清單:</label>
+                            <select class="form-control wishlist-select" v-model="selectedWishlistId" v-on:change="changeOption">
+                                <option v-for="wishlist in wishlists" :key="wishlist.id" :value="wishlist.id">
+                                    {{ wishlist.name }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="location">選擇分類:</label>
+                            <select class="form-control location-select" v-model="selectedLocationCategoryId">
+                                <option value="deleteAllLocation">全選</option>
+                                <option v-for="location in locationCategories" :key="location.id" :value="location.id">
+                                    {{ location.name }}
+                                </option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary" v-on:click="deleteWishlistWithCategory"><i class="fa-solid fa-trash-can"></i> 刪除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--訊息吐司-->
+    <div aria-live="polite" aria-atomic="true" class="position-relative">
+        <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+            <div class="toast" ref="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header">
+                    <strong class="me-auto">{{ toastTitle }}</strong>
+                    <small>{{ toastTime }}</small>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body">
+                    {{ toastMessage }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+   @*  <!--加入行程Modal addtoSchedule-->
+    <div class="modal fade" id="addtoScheduleModal" tabindex="-1" aria-labelledby="addtoScheduleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addtoScheduleModalLabel">加入行程</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <!-- Schedule Selection -->
+                        <div class="mb-3">
+                            <label for="schedule">選擇行程:</label>
+                            <select class="form-control schedule-select" v-model="selectedScheduleId" v-on:change="onScheduleChange">
+                                <option v-for="schedule in userschedules" :key="schedule.id" :value="schedule.id">
+                                    {{ schedule.name }}
+                                </option>
+                            </select>
+                        </div>
+                        <!-- Details Form (Second Step) -->
+                        <div class="row w-100" v-if="selectedScheduleId">
+                            <!-- 日期下拉選單 -->
+                            <div class="col-12 mb-3">
+                                <label for="date-list" class="form-label">選擇日期:</label>
+                                <select id="date-list" class="form-select" v-model="selectedDate" autocomplete="off" required>
+                                    <option value="0">----- 請選擇日期 -----</option>
+                                    <!-- 動態生成選項 -->
+                                    <option v-for="date in scheduleDates" :key="date" :value="date">
+                                        {{ date }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label for="date-list" class="form-label">前往方式:</label>
+                                <select id="transportation-list" class="form-select" v-model="selectedTransportationCategoryId" autocomplete="off" required>
+                                    <option value="0">----- 請選擇 -----</option>
+                                    <option value="1">開車</option>
+                                    <option value="3">大眾運輸</option>
+                                    <option value="4">腳踏車</option>
+                                    <option value="5">步行</option>
+                                </select>
+                                <!-- 動態生成選項 -->
+                            </div>
+                            <!-- 出發時間 -->
+                            <div class="col-12 mb-3">
+                                <label for="start-time" class="form-label">出發時間:</label>
+                                <input type="time" id="start-time" class="form-control" autocomplete="off" min="00:00" max="23:59" required>
+                            </div>
+                            <!-- 預計停留時間 -->
+                            <div class="col-12 mb-3">
+                                <label for="duration" class="form-label">預計在下個目的地停留時間 :</label>
+                                <div class="d-flex">
+                                    <input type="number" id="duration-hours" class="form-control me-2" placeholder="小時" min="0" step="1" required>
+                                    <input type="number" id="duration-minutes" class="form-control" placeholder="分鐘" min="0" step="1" required>
+                                </div>
+                            </div>
+                            <!-- 計算後的離開時間 -->
+                            <div class="col-12 mb-3">
+                                <label for="end-time" class="form-label">離開時間:</label>
+                                <input type="time" id="end-time" class="form-control" readonly>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer d-flex justify-content-end">
+                    <button class="btn btn-primary btn-sm" v-on:click="addToSchedule">加入行程</button>
+                    <button class="btn btn-secondary btn-sm ms-2" data-bs-dismiss="modal">取消</button>
+                </div>
+            </div>
+        </div>
+    </div> *@
+</div>
+<script>
+
+    //解密token取得ID
+    function base64UrlDecode(base64Url) {
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        return decodeURIComponent(atob(base64).split('').map(function (c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+    }
+
+    function parseJwt(token) {
+        const parts = token.split('.');
+        if (parts.length !== 3) {
+            throw new Error('Invalid token');
+        }
+        const payload = parts[1];
+        return JSON.parse(base64UrlDecode(payload));
+    }
+
+    function getUserIdFromToken() {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const decodedToken = parseJwt(token);
+                return decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
+            } catch (error) {
+                console.error('Failed to decode token:', error);
+            }
+        }
+        return null;
+    }
+    //解密token取得ID END
+
+
+    // function calculateEndTime(startTime, durationHours, durationMinutes) {
+    //     console.log("Start Time:", startTime); // 確認 startTime
+    //     console.log("Duration Hours:", durationHours); // 確認 durationHours
+    //     console.log("Duration Minutes:", durationMinutes); // 確認 durationMinutes
+
+    //     // 解析開始時間
+    //     const [startHours, startMinutes] = startTime.split(':').map(Number);
+    //     const startDate = new Date();
+    //     startDate.setHours(startHours);
+    //     startDate.setMinutes(startMinutes);
+    //     console.log("Start Date:", startDate); // 確認 startDate
+
+    //     // 計算結束時間
+    //     const endDate = new Date(startDate.getTime() + (durationHours * 60 + durationMinutes) * 60000);
+    //     console.log("End Date:", endDate); // 確認 endDate
+
+    //     // 返回結束時間的格式為 'HH:MM'
+    //     const endHours = endDate.getHours().toString().padStart(2, '0');
+    //     const endMinutes = endDate.getMinutes().toString().padStart(2, '0');
+    //     return `${endHours}:${endMinutes}`;
+    // }
+
+
+    document.addEventListener('DOMContentLoaded', async function () {
+        const vueApp = {
+            data() {
+                return {
+                    isLoggedIn: false,
+                    userdata: [],
+                    wishlists: [],
+                    newWishlistName: '',
+                    newCategoryName: '',
+                    newCategoryColor: '#000000',
+                    newCategoryIcon: 'fa-solid fa-map', // 初始選中的圖示
+                    icons: [
+                        { value: 'fa-solid fa-map' },
+                        { value: 'fa-solid fa-bowl-food' },
+                        { value: 'fa-solid fa-tree' },
+                        { value: 'fa-solid fa-mountain-sun' },
+                        { value: 'fa-solid fa-person-swimming' },
+                        { value: 'fa-solid fa-house' }
+                    ],
+                    selectedWishlist: null,
+                    selectedWishlistId: null,
+                    selectedLocationCategory: null,
+                    selectedLocationCategoryId: null,
+                    locationCategories: [],
+                    allLocationCategories: [],
+                    //以下為[加入行程]相關
+                    // selectedLocation: null,
+                    // selectedScheduleId: null,
+                    // userschedules: [],
+                    // scheduleDates: [],
+                    // selectedDate: null,
+                    // selectedTransportationCategoryId: null,
+                    //以下為聊天室相關
+                    isChooseChatroom: false,
+                    selectedChatroom: "",
+                    connection: null,
+                    memberData: [],
+                    schdules: [],
+                    schduleName: '',
+                    newMessage: "",
+                    messages: [],
+                    toastTitle: '',
+                    toastMessage: '',
+                    toastTime: '',
+                    hasAccess: false,
+                    //以下為聊天室編輯用
+                    editMessageId: 0,
+                    editMessage: "",
+                };
+            },
+            async mounted() {
+                //未登入提示
+                const userId = getUserIdFromToken();
+                if (userId) {
+                    this.isLoggedIn = true;
+                    await this.fetchWishlists();
+                    await this.axiosUserData();
+                    // 取得所有行程，加入行程用
+                    const scheduleUri = `${baseAddress}/api/Schedules/AllSchedules`;
+                    const token = localStorage.getItem('token');
+                    axios.get(scheduleUri, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    }).then(response => {
+                        if (response.data.mainSchedules && response.data.groupSchedules) {
+                            this.userschedules = [...response.data.mainSchedules, ...response.data.groupSchedules];
+                        } else if (response.data.mainSchedules) {
+                            this.userschedules = response.data.mainSchedules;
+                        } else if (response.data.groupSchedules) {
+                            this.userschedules = response.data.groupSchedules;
+                        }
+                        console.log("行程:", response.data);
+                        console.log(this.userschedules);
+                    }).catch(error => {
+                        console.error('Error loading schedules:', error);
+                    });
+                } else {
+                    this.isLoggedIn = false;
+                    console.log("尚未登入");
+                }
+
+                const uri = `${baseAddress}/api/Wishlist/GetAllWishlist/${userId}`;
+                axios.get(uri).then(response => {
+                    this.wishlists = response.data.map(wishlist => ({
+                        id: wishlist.id,
+                        name: wishlist.name
+                    }));
+                    this.allLocationCategories = response.data.flatMap(wishlist => wishlist.locationCategories);
+
+                    this.locationCategories = [];
+                }).catch(error => {
+                    console.error('Error loading data:', error);
+                });
+                //重置createWishlistModal畫面
+                const createWishlistModalElement = document.getElementById('createWishlistModal');
+                createWishlistModalElement.addEventListener('show.bs.modal', this.resetWishlistForm);
+
+                //重置deleteWishlistModal畫面
+                const deleteWishlistModalElement = document.getElementById('deleteWishlistModal');
+                deleteWishlistModalElement.addEventListener('show.bs.modal', this.resetDeleteForm);
+
+                //重置editWishlistModal畫面
+                const editWishlistModalElement = document.getElementById('editWishlistModal');
+                editWishlistModalElement.addEventListener('show.bs.modal', this.resetEditForm);
+
+                //以下為聊天室相關
+                try {
+                    let response = await axios.get(
+                        `${baseAddress}/api/schedules/GetRelatedSchedules`,
+                        {
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                            },
+                        }
+                    );
+                    this.schdules = response.data;
+                } catch (error) {
+                    console.log(error);
+                }
+
+                this.$nextTick(async () => {
+                    $('#SchdulesList').owlCarousel({
+                        margin: 10,
+                        loop: false,
+                        autoWidth: true,
+                        items: 4,
+                        dots: false,
+                    });
+
+                    this.connection = new signalR.HubConnectionBuilder()
+                        .withUrl(`${baseAddress}/ChatHub`)
+                        .build();
+                    this.connection.on("JoinGroupSuccess", (message) => {
+                        //console.log(message);
+                    });
+
+                    this.connection.on("JoinGroupFailed", (errorMessage) => {
+                        console.error(errorMessage);
+                    });
+
+                    this.connection.on("ReceiveMessage", (message) => {
+                        if (this.selectedChatroom == message.scheduleId) {
+                            this.messages.push(message);
+                        } else {
+                            this.showToast(`${message.userName}(${this.schdules[message.scheduleId]})`, message.message, message.createdAt);
+                        }
+                    });
+
+                    this.connection.on("ReceiveUpdatedMessage", (updatedMessage) => {
+                        const index = this.messages.findIndex(m => m.id === updatedMessage.id);
+                        if (index !== -1) {
+                            this.messages[index] = updatedMessage;
+                        }
+                    });
+
+                    this.connection.on("ReceiveDeleteMessage", (deletedMessage) => {
+                        const index = this.messages.findIndex(m => m.id === deletedMessage.id);
+                        if (index !== -1) {
+                            this.messages[index] = deletedMessage;
+                        }
+                    });
+
+                    await this.connectionStart();
+                    for (const schdule in this.schdules) {
+                        await this.joinGroup(schdule, this.userdata.id)
+                    }
+                });
+            },
+            methods: {
+                async fetchWishlists() {
+                    const userId = getUserIdFromToken();
+                    if (!userId) {
+                        console.error('User ID not found');
+                        return;
+                    }
+
+                    try {
+                        const response = await axios.get(`${baseAddress}/api/Wishlist/GetAllWishlist/${userId}`);
+                        const wishlistDTOs = response.data;
+
+                        wishlistDTOs.forEach(wishlist => {
+                            wishlist.wishlistDetails = wishlist.wishlistDetails || [];
+                            wishlist.locationCategories = wishlist.locationCategories || [];
+                            wishlist.selectedCategoryId = null; // Add selectedCategoryId for each wishlist
+                        });
+
+                        this.wishlists = wishlistDTOs;
+                        console.log(this.wishlists);
+                    } catch (error) {
+                        console.error('Error fetching wishlists:', error);
+                    }
+                },
+                async axiosUserData() {
+                    const response = await axios.get(`${baseAddress}/api/user/GetUserIdName`, {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    })
+                    const data = response.data;
+                    this.userdata = data;
+                },
+                setSelectedCategory(wishlist, locationCategoryId) {
+                    wishlist.selectedCategoryId = locationCategoryId;
+                    this.fetchDetailsForCategory(wishlist, locationCategoryId);
+                },
+                getFilteredDetails(wishlist) {
+                    if (!wishlist.selectedCategoryId) return [];
+                    const details = wishlist.wishlistDetails.filter(detail => detail.locationCategoryId === wishlist.selectedCategoryId);
+                    return details;
+                },
+                async fetchDetailsForCategory(wishlist, locationCategoryId) {
+                    const details = wishlist.wishlistDetails.filter(detail => detail.locationCategoryId === locationCategoryId);
+                    //若尚無行程，提示用戶
+                    for (const detail of details) {
+                        if (detail.googlePlaceId) {
+                            try {
+                                const placeDetails = await this.fetchPlaceDetails(detail.googlePlaceId);
+                                if (placeDetails.photos && placeDetails.photos.length > 0) {
+                                    const photoReference = placeDetails.photos[0].photo_reference;
+                                    const photoUrl = await this.fetchPhoto(photoReference);
+                                    detail.photoUrl = photoUrl;
+                                }
+                                detail.address = placeDetails.formatted_address;
+                            } catch (error) {
+                                console.error('Error fetching place details or photo:', error);
+                            }
+                        }
+                    }
+                },
+                async fetchPhoto(photoReference) {
+                    try {
+                        const response = await axios.get(`${baseAddress}/api/SearchSpots/GetPhoto`, {
+                            params: {
+                                photoReference: photoReference
+                            }
+                        });
+                        if (response.data && response.data.url) {
+                            return response.data.url;
+                        } else {
+                            console.error('Error fetching photo: No URL returned');
+                            return null;
+                        }
+                    } catch (error) {
+                        console.error('Error fetching photo:', error);
+                        return null;
+                    }
+                },
+                async fetchPlaceDetails(placeId) {
+                    try {
+                        const response = await axios.get(`${baseAddress}/api/SearchSpots/GetDetails`, {
+                            params: {
+                                placeId: placeId
+                            }
+                        });
+                        if (response.data && response.data.result) {
+                            return response.data.result;
+                        } else {
+                            console.error('Error fetching place details: No details returned');
+                            return null;
+                        }
+                    } catch (error) {
+                        console.error('Error fetching place details:', error);
+                        return null;
+                    }
+                },
+                //新增願望清單及標籤
+                async handleSubmit() {
+                    if (this.selectedWishlistId === null) {
+                        await this.createWishlistWithCategory();
+                        console.log("handleSubmit selectedWishlistId is null");
+                    }
+                    else {
+                        await this.createCategoryForWishlist();
+                        console.log("handleSubmit selectedWishlistId is not null");
+                    }
+                },
+                async createWishlistWithCategory() {
+                    const userId = getUserIdFromToken();
+                    if (!userId) {
+                        console.error('User ID not found');
+                        return;
+                    }
+
+                    try {
+                        // 新增願望清單
+                        const newWishlist = { id: 0, userId: userId, name: this.newWishlistName };
+                        const wishlistResponse = await axios.post(`${baseAddress}/api/Wishlist/CreateWishlist`, newWishlist);
+                        const createdWishlist = wishlistResponse.data;
+
+                        console.log(createdWishlist);
+                        // 新增標籤
+                        const newLocationCategory = {
+                            wishlistId: createdWishlist.id,
+                            name: this.newCategoryName,
+                            color: this.newCategoryColor,
+                            icon: this.newCategoryIcon
+                        };
+
+                        const categoryResponse = await axios.post(`${baseAddress}/api/Wishlist/CreateLocationCategory`, newLocationCategory);
+                        const createdLocationCategory = categoryResponse.data;
+                        Swal.fire({
+                            title: "新增成功!",
+                            icon: "success"
+                        }).then(() => {
+                            this.closeCreateModal();
+                        });
+
+                        await this.fetchWishlists();
+
+                    } catch (error) {
+                        if (error.response) {
+                            console.error('Error response:', error.response.data);
+                            console.error('Error status:', error.response.status);
+                            console.error('Error headers:', error.response.headers);
+                        } else if (error.request) {
+                            console.error('Error request:', error.request);
+                        } else {
+                            console.error('Error message:', error.message);
+                        }
+                    }
+                },
+                //僅新增標籤
+                async createCategoryForWishlist() {
+                    const newLocationCategory = {
+                        wishlistId: this.selectedWishlistId,
+                        name: this.newCategoryName,
+                        color: this.newCategoryColor,
+                        icon: this.newCategoryIcon
+                    };
+                    console.log("createCategoryForWishlist!!!");
+                    try {
+                        await axios.post(`${baseAddress}/api/Wishlist/CreateLocationCategory`, newLocationCategory);
+                        Swal.fire({
+                            title: "新增成功!",
+                            icon: "success"
+                        }).then(() => {
+                            this.closeCreateModal();
+                        });
+                        await this.fetchWishlists();
+                    } catch (error) {
+                        console.error('Error creating category:', error);
+                    }
+                },
+                //刪除願望清單及標籤
+                async deleteWishlistWithCategory() {
+                    const userId = getUserIdFromToken();
+                    if (!userId) {
+                        console.error('User ID not found');
+                        return;
+                    }
+
+                    try {
+                        if (this.selectedLocationCategoryId === "deleteAllLocation") {
+                            //提示用戶刪除清單會連動刪除標籤及行程
+                            // 刪除整個願望清單及其所有標籤
+                            await axios.delete(`${baseAddress}/api/Wishlist/DeleteWishlist/${this.selectedWishlistId}`);
+                            Swal.fire({
+                                title: "刪除成功!",
+                                icon: "success"
+                            }).then(() => {
+                                this.closeDeleteModal();
+                            });
+                        } else {
+                            //提示用戶會連動刪除行程
+                            // 刪除選定的標籤
+                            await axios.delete(`${baseAddress}/api/Wishlist/DeleteLocationCategory/${this.selectedLocationCategoryId}`);
+                            Swal.fire({
+                                title: "刪除成功!",
+                                icon: "success"
+                            }).then(() => {
+                                this.closeDeleteModal();
+                            });
+                        }
+
+                        // 刪除後更新願望清單和標籤
+                        await this.fetchWishlists();
+                    } catch (error) {
+                        console.error('Error during deletion:', error.message);
+                    }
+                },
+                //依選取的願望清單對應標籤
+                changeOption: function () {
+                    this.filterLocationCategories();
+                    this.updateSelectedLocationCategory(); // 設置更新後的標籤
+                },
+                filterLocationCategories: function () {
+                    if (this.selectedWishlistId !== null) {
+                        // 根據選擇的願望清單過濾分類
+                        this.locationCategories = this.allLocationCategories.filter(category => {
+                            return category.wishlistId === this.selectedWishlistId;
+                        });
+                        this.selectedLocationCategoryId = null;
+                        this.selectedLocationCategory = null;
+                    } else {
+                        // 沒有選擇清單時，保持分類為空
+                        this.locationCategories = [];
+                    }
+                },
+
+                //以下為聊天室相關
+                async selectChatroom(scheduleId) {
+                    this.selectedChatroom = scheduleId;
+                    this.isChooseChatroom = true;
+                    await this.axiosGroupMemberData(scheduleId);
+                    await this.axiosChatRoom(scheduleId);
+                    await this.axioshasAccess(scheduleId);
+                },
+                async axioshasAccess(scheduleId) {
+                    try {
+                        const response = await axios.get(`${baseAddress}/api/ScheduleAuthorities/GetUserAuthority/${scheduleId}`, {
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                            },
+                        })
+                        const data = response.data;
+                        this.hasAccess = data.authorityCategoryIds.some((ac) => ac == 7 || ac == 8);
+                    } catch (error) {
+                        console.log(error);
+                    }
+                },
+
+                async axiosGroupMemberData(scheduleId) {
+                    try {
+                        const response = await axios.get(
+                            `${baseAddress}/api/ScheduleGroups/GetGroupsMembers/${scheduleId}`,
+                            {
+                                headers: {
+                                    Authorization: `Bearer ${token}`,
+                                },
+                            }
+                        );
+                        const datas = response.data;
+                        datas.forEach((data) => {
+                            this.memberData.push({ userId: data.userId, userPhoto: data.userPhoto });
+                        });
+                    } catch (error) {
+                        console.log(error);
+                    }
+                },
+                async axiosChatRoom(scheduleId) {
+                    try {
+                        const response = await axios.get(
+                            `${baseAddress}/api/chatroom`,
+                            {
+                                params: {
+                                    scheduleId: scheduleId,
+                                },
+                                headers: {
+                                    Authorization: `Bearer ${token}`,
+                                },
+                            }
+                        );
+                        this.messages = response.data;
+                        this.scrollToBottom();
+                    } catch (error) {
+                        console.log(error);
+                    }
+                },
+                isNewDay(index) {
+                    if (index === 0) return true;
+                    const currentMessageDate = new Date(this.messages[index].createdAt).setHours(0, 0, 0, 0);
+                    const previousMessageDate = new Date(this.messages[index - 1].createdAt).setHours(0, 0, 0, 0);
+                    return currentMessageDate !== previousMessageDate;
+                },
+                getUserPhoto(userId) {
+                    const user = this.memberData.find(member => member.userId === userId);
+                    if (user) {
+                        return `data:image/png;base64,${user.userPhoto}`;
+                    }
+                    return '/images/female.png';
+                },
+                async connectionStart() {
+                    try {
+                        await this.connection.start();
+                    } catch (err) {
+                        console.error(err);
+                        setTimeout(connectionStart, 5000);
+                    }
+                },
+                async joinGroup(groupId, userId) {
+                    try {
+                        await this.connection.invoke("JoinGroup", parseInt(groupId), userId);
+                    } catch (err) {
+                        console.error("Error joining group:", err);
+                    }
+                },
+                async sendMessage(scheduleId, message) {
+                    if (this.newMessage == "") return;
+                    try {
+                        const response = await axios.post(
+                            `${baseAddress}/api/chatroom/SendMessage`,
+                            {
+                                scheduleId: parseInt(scheduleId),
+                                message: message
+                            },
+                            {
+                                headers: {
+                                    Authorization: `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                }
+                            }
+                        );
+                        this.newMessage = "";
+                        this.scrollToBottom();
+                    } catch (error) {
+                        console.log(error);
+                    }
+                },
+                formatDate(dateTimeString) {
+                    const date = new Date(dateTimeString);
+                    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                    const day = date.getDate().toString().padStart(2, '0');
+                    return `${month}/${day}`;
+                },
+                formatTime(dateTimeString) {
+                    const date = new Date(dateTimeString);
+                    const hours = date.getHours().toString().padStart(2, '0');
+                    const minutes = date.getMinutes().toString().padStart(2, '0');
+                    return `${hours}: ${minutes}`;
+                },
+                scrollToBottom() {
+                    this.$nextTick(() => {
+                        const chatroomMessages = this.$refs.chatroomMessages;
+                        chatroomMessages.scrollTop = chatroomMessages.scrollHeight;
+                    })
+                },
+                showToast(title, message, time) {
+                    this.toastTitle = title;
+                    this.toastMessage = message;
+                    this.toastTime = this.formatTime(time);
+                    const toastEl = this.$refs.toast;
+                    const toast = new bootstrap.Toast(toastEl);
+                    toast.show();
+                },
+                //編輯訊息用
+                enableEditing(message) {
+                    this.editMessageId = message.id;
+                    this.editMessage = message.message;
+                },
+                cancelEditing() {
+                    this.editMessageId = 0;
+                    this.editMessage = "";
+                },
+                async saveMessage() {
+                    try {
+                        if (this.editMessage == "") {
+                            Swal.fire("請輸入要修改的訊息");
+                            return
+                        };
+                        const response = await axios.put(`${baseAddress}/api/chatroom`, {
+                            id: parseInt(this.editMessageId),
+                            message: this.editMessage
+                        }, {
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        })
+
+                        this.editMessageId = 0;
+                        this.editMessage = "";
+                    } catch (error) {
+                        console.error("Failed to update message:", error);
+                    }
+                },
+
+                async deleteMessage(message) {
+                    swal.fire({
+                        title: `${message.userName}:${message.message}?`,
+                        text: "你確定要刪除這則訊息嗎",
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonColor: "#198754",
+                        cancelButtonColor: "#C38154",
+                        confirmButtonText: "刪除它",
+                        cancelButtonText: "取消",
+                        reverseButtons: true,
+                    }).then(async (result) => {
+                        if (result.isConfirmed) {
+                            try {
+                                const response = await axios.delete(`${baseAddress}/api/chatroom/${message.id}`, {
+                                    headers: {
+                                        Authorization: `Bearer ${token}`,
+                                    },
+                                });
+                            } catch (error) {
+                                console.error("Failed to update message:", error);
+                                Swal.fire("訊息刪除失敗");
+                            }
+                        }
+                    })
+                },
+
+                updateSelectedWishlist() {
+                    //根據選定的清單，將其設置於<input>元素供用戶修改
+                    this.selectedWishlist = this.wishlists.find(w => w.id === this.selectedWishlistId) || null;
+                },
+                //修改願望清單
+                async saveWishlist() {
+                    if (!this.selectedWishlist) {
+                        console.error('No wishlist selected');
+                        return;
+                    }
+                    const userId = getUserIdFromToken();
+                    if (!userId) {
+                        console.error('User ID not found');
+                        return;
+                    }
+                    try {
+                        //回傳後端data
+                        const updateData = {
+                            id: this.selectedWishlist.id,
+                            userId: userId,
+                            name: this.selectedWishlist.name
+                        };
+
+                        //向發送請求
+                        const response = await axios.put(`${baseAddress}/api/Wishlist/UpdateWishlist/${this.selectedWishlist.id}`, updateData);
+                        //顯示後端回傳訊息
+                        Swal.fire({
+                            title: "修改成功!",
+                            icon: "success"
+                        }).then(() => {
+                            this.closeEditModal();
+                        });
+                        await this.fetchWishlists(); // 更新清單
+                    } catch (error) {
+                        console.error('Error updating wishlist:', error);
+                    }
+                },
+                //根據選定的標籤，設置<input>元素
+                updateSelectedLocationCategory() {
+                    //根據選定的清單，將其設置於<input>元素供用戶修改
+                    this.selectedLocationCategory = this.locationCategories.find(l => l.id === this.selectedLocationCategoryId) || null;
+                },
+                //修改標籤
+                async saveLocationCategory() {
+                    if (!this.selectedLocationCategory) {
+                        console.error('No location category selected');
+                        return;
+                    }
+
+                    try {
+                        const updateData = {
+                            id: this.selectedLocationCategoryId,
+                            wishlistId: this.selectedWishlistId,
+                            name: this.selectedLocationCategory.name,
+                            icon: this.selectedLocationCategory.icon,
+                            color: this.selectedLocationCategory.color
+                        };
+                        const response = await axios.put(`${baseAddress}/api/Wishlist/UpdateLocationCategory/${this.selectedLocationCategory.id}`, updateData);
+                        Swal.fire({
+                            title: "修改成功!",
+                            icon: "success"
+                        }).then(() => {
+                            this.closeEditModal();
+                        });
+
+                        await this.fetchWishlists();
+                    } catch (error) {
+                        console.error('Error updating location category:', error);
+                    }
+                },
+                // //以下為[加入行程]相關方法
+                // setSelectedLocation(detail) {
+                //     this.selectedLocation = detail;
+                //     console.log("選中的地點:", this.selectedLocation);
+                // },
+                // onScheduleChange() {
+                //     // 取得選中的行程
+                //     const selectedSchedule = this.userschedules.find(schedule => schedule.id === this.selectedScheduleId);
+                //     console.log("選中的行程:", selectedSchedule);
+
+                //     if (selectedSchedule) {
+                //         // 產生日期範圍
+                //         this.generateDateRange(selectedSchedule.startTime, selectedSchedule.endTime);
+                //     }
+                // },
+                // // 產生所選中的行程日期範圍
+                // generateDateRange(startTime, endTime) {
+                //     const start = new Date(startTime);
+                //     const end = new Date(endTime);
+                //     const dateArray = [];
+                //     let currentDate = start;
+
+                //     while (currentDate <= end) {
+                //         const formattedDate = currentDate.toISOString().split('T')[0];
+                //         dateArray.push(formattedDate);
+                //         currentDate.setDate(currentDate.getDate() + 1);
+                //     }
+
+                //     this.scheduleDates = dateArray;
+                //     console.log("生成的日期範圍:", this.scheduleDates);
+                // },
+                // //加入行程
+                // async addToSchedule() {
+                //     if (!this.selectedScheduleId || !this.selectedDate || !this.selectedLocation) {
+                //         Swal.fire('提示', '請選擇行程、日期及地點', 'warning');
+                //         return;
+                //     }
+                //     const startTimeInput = document.getElementById('start-time').value;
+                //     const durationHours = parseInt(document.getElementById('duration-hours').value, 10) || 0;
+                //     const durationMinutes = parseInt(document.getElementById('duration-minutes').value, 10) || 0;
+
+                //     // // 計算結束時間
+                //     // const endTime = calculateEndTime(startTimeInput, durationHours, durationMinutes);
+
+                //     // // 更新結束時間輸入框的值
+                //     // document.getElementById('end-time').value = endTime;
+
+                //     // 計算結束時間
+                //     const endTime = calculateEndTime(startTimeInput, durationHours, durationMinutes);
+
+                //     if (endTime === undefined) {
+                //         console.error('EndTime is undefined');
+                //         return;
+                //     }
+
+                //     // 更新結束時間輸入框的值
+                //     document.getElementById('end-time').value = endTime;
+
+                //     const scheduleDetail = {
+                //         //"ScheduleDayId": this.selectedDate,
+                //         "ScheduleDayId": 39,
+                //         "LocationName": this.selectedLocation.name,
+                //         "Location": this.selectedLocation.googlePlaceId,
+                //         "StartTime": startTimeInput,
+                //         "EndTime": endTime,
+                //         "lat": this.selectedLocation.locationLat,
+                //         "lng": this.selectedLocation.locationLng,
+                //         "TransportationCategoryId": this.selectedTransportationCategoryId
+
+                //     };
+                //     console.log("scheduleDetail:", scheduleDetail); // 確保這裡的所有屬性都有正確的值
+
+                //     try {
+                //         const token = localStorage.getItem('token');
+                //         const response = await fetch(`${baseAddress}/api/ScheduleDetails`, {
+                //             method: 'POST',
+                //             headers: {
+                //                 'Authorization': `Bearer ${token}`,
+                //                 'Content-Type': 'application/json'
+                //             },
+                //             body: JSON.stringify(scheduleDetail)
+                //         });
+
+                //         if (!response.ok) {
+                //             throw new Error(`HTTP error! status: ${response.status}`);
+                //         }
+
+                //         Swal.fire('成功', '行程已成功加入', 'success').then(() => {
+                //             console.log(`go refresh add schedule id :${scheduleId}`);
+                //             //insertTabContentItem(dataresult.scheduleDayId, dataresults);
+                //         });
+                //         // Optionally reload or update the schedule list here
+
+                //     } catch (error) {
+                //         console.error('Error posting schedule detail:', error);
+                //         Swal.fire('錯誤', '新增行程發生錯誤，請稍後再試', 'error');
+                //     }
+                //     //關閉modal
+                //     const addtoScheduleElement = document.getElementById('addtoScheduleModal');
+                //     const addtoScheduleModal = bootstrap.Modal.getInstance(addtoScheduleElement);
+                //     addtoScheduleModal.hide();
+
+                //     const sidebarOffcanvasElement = document.getElementById('sideBarOffcanvas');
+                //     const sidebarOffcanvas = bootstrap.Offcanvas.getInstance(sidebarOffcanvasElement);
+                //     sidebarOffcanvas.hide();
+                // },
+                //移除願望清單中的行程
+                async deleteSelectedDetail(detailId) {
+                    try {
+                        const response = await axios.delete(`${baseAddress}/api/Wishlist/DeleteWishlistDetail/${detailId}`);
+                        if (response.status === 200) {
+                            // 删除成功，移除前端列表
+                            this.wishlists.forEach(wishlist => {
+                                const index = wishlist.wishlistDetails.findIndex(detail => detail.id === detailId);
+                                if (index !== -1) {
+                                    wishlist.wishlistDetails.splice(index, 1);
+                                }
+                            });
+                            Swal.fire({
+                                title: "行程已成功刪除",
+                                icon: "success"
+                            })
+                        }
+                    } catch (error) {
+                        console.error('删除行程時出錯', error.message);
+                        Swal.fire({
+                            title: "行程刪除失敗，請稍後再試",
+                            icon: "error"
+                        })
+                    }
+                },
+                //關閉modal
+                closeCreateModal() {
+                    // Close the modal using Vue.js method
+                    const createModalElement = document.getElementById('createWishlistModal');
+                    const createModal = bootstrap.Modal.getInstance(createModalElement);
+                    createModal.hide();
+
+                    // Trigger the sidebar offcanvas
+                    const sidebarOffcanvasElement = document.getElementById('sideBarOffcanvas');
+                    const sidebarOffcanvas = bootstrap.Offcanvas.getInstance(sidebarOffcanvasElement) || new bootstrap.Offcanvas(sidebarOffcanvasElement);
+                    sidebarOffcanvas.show();
+                },
+                closeDeleteModal() {
+                    // Close the modal using Vue.js method
+                    const deleteModalElement = document.getElementById('deleteWishlistModal');
+                    const deleteModal = bootstrap.Modal.getInstance(deleteModalElement);
+                    deleteModal.hide();
+
+                    // Trigger the sidebar offcanvas
+                    const sidebarOffcanvasElement = document.getElementById('sideBarOffcanvas');
+                    const sidebarOffcanvas = bootstrap.Offcanvas.getInstance(sidebarOffcanvasElement) || new bootstrap.Offcanvas(sidebarOffcanvasElement);
+                    sidebarOffcanvas.show();
+                },
+                closeEditModal() {
+                    // Close the modal using Vue.js method
+                    const editModalElement = document.getElementById('editWishlistModal');
+                    const editModal = bootstrap.Modal.getInstance(editModalElement);
+                    editModal.hide();
+
+                    // Trigger the sidebar offcanvas
+                    const sidebarOffcanvasElement = document.getElementById('sideBarOffcanvas');
+                    const sidebarOffcanvas = bootstrap.Offcanvas.getInstance(sidebarOffcanvasElement) || new bootstrap.Offcanvas(sidebarOffcanvasElement);
+                    sidebarOffcanvas.show();
+                },
+                //重置表單
+                resetWishlistForm() {
+                    // 重置 createWishlistModal 的表單數據
+                    this.newWishlistName = '';
+                    this.newCategoryName = '';
+                    this.newCategoryColor = '#000000';
+                    this.newCategoryIcon = 'fa-solid fa-map';
+                    this.selectedWishlistId = null;
+                },
+                resetDeleteForm() {
+                    // 重置 deleteWishlistModal 的表單數據
+                    this.selectedWishlistId = null;
+                    this.selectedLocationCategoryId = null;
+                },
+                resetEditForm() {
+                    // 重置 deleteWishlistModal 的表單數據
+                    this.selectedWishlistId = null;
+                    this.selectedLocationCategoryId = null;
+                    if (this.selectedLocationCategoryId != null) {
+                        this.selectedWishlist.name = '';
+                        this.selectedLocationCategory.name = '';
+                        this.selectedLocationCategory.icon = 'fa-solid fa-map';
+                        this.selectedLocationCategory.color = '#000000';
+                    }
+                },
+            }
+
+        };
+        Vue.createApp(vueApp).mount('#appSidebar');
+    });
+</script>

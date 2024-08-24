@@ -1,0 +1,70 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Views\Schdules\Partials\**" />
+    <Compile Remove="wwwroot\image\**" />
+    <Compile Remove="wwwroot\lib\moment.js\**" />
+    <Content Remove="Views\Schdules\Partials\**" />
+    <Content Remove="wwwroot\image\**" />
+    <Content Remove="wwwroot\lib\moment.js\**" />
+    <EmbeddedResource Remove="Views\Schdules\Partials\**" />
+    <EmbeddedResource Remove="wwwroot\image\**" />
+    <EmbeddedResource Remove="wwwroot\lib\moment.js\**" />
+    <None Remove="Views\Schdules\Partials\**" />
+    <None Remove="wwwroot\image\**" />
+    <None Remove="wwwroot\lib\moment.js\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Controllers\ScheduleData.cs" />
+    <Compile Remove="Views\Schdules\Index.cshtml.cs" />
+    <Content Remove="bundleconfig.json" />
+    <Content Remove="Views\Home\Schedule.cshtml" />
+    <Content Remove="wwwroot\css\mdtimepicker.min.css" />
+    <Content Remove="wwwroot\images\entrylogolightnoshadow.png" />
+    <Content Remove="wwwroot\images\entrylogomiddle.png" />
+    <Content Remove="wwwroot\js\ExpenseMain.js" />
+    <Content Remove="wwwroot\js\mdtimepicker.min.js" />
+    <Content Remove="wwwroot\js\SchduleDetails.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="wwwroot\css\SchduleIndex.css" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\ExpenseMain.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="Views\Home\Schedule.cshtml" />
+    <Content Remove="Views\Schdules\CreateNewSchdule.cshtml" />
+    <Content Remove="Views\Schdules\_ScheduleList.cshtml" />
+    <Content Remove="wwwroot\css\main_styles2.css" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="wwwroot\css\color.css" />
+    <_ContentIncludedByDefault Remove="wwwroot\js\SchduleDetails.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="bundleconfig.json" />
+    <None Include="wwwroot\js\SchduleDetails.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.7" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\IdentityJWT\PinPinServer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\images\avatar\" />
+  </ItemGroup>
+
+</Project>
